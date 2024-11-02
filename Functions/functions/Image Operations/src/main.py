@@ -1,9 +1,13 @@
 from appwrite.client import Client
-from appwrite.services.users import Users
+from appwrite.services.databases import Databases
+from appwrite.services.storage import Storage
 from appwrite.exception import AppwriteException
+from .Image_Functions.Enhancement import process_image_operations
 import os
 
-# This Appwrite function will be executed every time your function is triggered
+# Assuming process_image_operations function is already defined elsewhere
+# from your_module import process_image_operations
+
 def main(context):
     
     client = (
@@ -12,28 +16,52 @@ def main(context):
         .set_project(os.environ["APPWRITE_FUNCTION_PROJECT_ID"])
         .set_key(context.req.headers["x-appwrite-key"])
     )
-    users = Users(client)
+
+    database = Databases(client)
+    storage = Storage(client)
+
+    # Simple health check for the endpoint
+    if context.req.path == "/ping":
+        return context.res.text("Pong")
+        
+
+    # Retrieve the file ID from the event context
+    file_id = context.req.payload["$id"]
+    image_database = os.environ["IMAGE_DATABASE_ID"]
+    image_operation_collection = os.environ["IMAGE_OPERATION_COLLECTION_ID"]
 
     try:
-        response = users.list()
-        # Log messages and errors to the Appwrite Console
-        # These logs won't be seen by your end users
-        context.log("Total users: " + str(response["total"]))
+        # Fetch the document from the 'image_operation' collection using the file_id
+        document = database.get_document(image_database,image_operation_collection, file_id)
+        
+        # Log the retrieved document
+        context.log(f"Image operation document for {file_id}: {document}")
+
+        # Update progress state to 'processing'
+        database.update_document(image_database,image_operation_collection, file_id, {"progress_state": "processing"})
+        
+        # Extract operations and file path
+        operations = document.get("operations", {})
+        file_path = document.get("file_path")  # Assuming file_path is stored in the document
+
+        # Call the process_image_operations function
+        output_image_url = process_image_operations(file_path, operations)
+        
+        # Update original image in the bucket        
+
+        # Log the output image URL
+        context.log(f"Processed image URL: {output_image_url}")
+
+        # Update progress state to 'completed'
+        database.update_document(image_database,image_operation_collection, file_id, {
+            "progress_state": "completed",
+            "output_image_url": output_image_url
+        })
+        
+        return context.res.json({"output_image_url": output_image_url}, 200)
+      
     except AppwriteException as err:
-        context.error("Could not list users: " + repr(err))
+        context.error("Could not retrieve document: " + repr(err))
+        return context.res.json({"error": "Could not retrieve document"}, 500)
 
-    # The req object contains the request data
-    if context.req.path == "/ping":
-        # Use res object to respond with text(), json(), or binary()
-        # Don't forget to return a response!
-        return context.res.text("Pong")
-
-    return context.res.json(
-        {
-            "motto": "Build like a team of hundreds_",
-            "learn": "https://appwrite.io/docs",
-            "connect": "https://appwrite.io/discord",
-            "getInspired": "https://builtwith.appwrite.io",
-        }
-    )
-
+    
