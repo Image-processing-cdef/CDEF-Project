@@ -1,3 +1,4 @@
+from Object_Detection.object_det import object_detection
 from appwrite.client import Client
 from appwrite.services.databases import Databases
 from appwrite.services.storage import Storage
@@ -45,8 +46,14 @@ def main(context):
         file_path = document.get("file_path")  # Assuming file_path is stored in the document
 
         # Call the process_image_operations function
-        output_image_url = process_image_operations(file_path, operations)
+        if operations.get("enhancement"):
+            output_image_url = process_image_operations(file_path, operations)
         
+        #Object Detection
+        if operations.get("object_detection"):
+            object_output_url = object_detection(file_path , client , storage)
+
+
         # Update original image in the bucket        
 
         # Log the output image URL
@@ -55,7 +62,8 @@ def main(context):
         # Update progress state to 'completed'
         database.update_document(image_database,image_operation_collection, file_id, {
             "progress_state": "completed",
-            "output_image_url": output_image_url
+            "output_image_url": output_image_url,
+            "object_output_url": object_output_url
         })
         
         return context.res.json({"output_image_url": output_image_url}, 200)
