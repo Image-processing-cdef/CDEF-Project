@@ -1,227 +1,311 @@
-import React, { useState } from "react";
-import {
-  Slider,
-  Button,
-  Radio,
-  Switch,
-  Input,
-  message,
-  Typography,
-} from "antd";
-
-const { Title, Paragraph } = Typography;
+import React, { useState } from 'react';
+import { Operations, defaultOperations, upscale_type } from '../../types/image_operations';
+import { saveImage } from '../../utils/appwrite';
 
 const Home: React.FC = () => {
-  const [image, setImage] = useState<File | null>(null);
-  const [operation, setOperation] = useState<string>("");
-  const [restorationType, setRestorationType] = useState<string>("");
-  const [polishing, setPolishing] = useState<boolean>(false);
-  const [width, setWidth] = useState<string | number>("");
-  const [height, setHeight] = useState<string | number>("");
-  const [smartCrop, setSmartCrop] = useState<string>("center");
-  const [hdr, setHdr] = useState<number>(50);
-  const [backgroundRemoval, setBackgroundRemoval] = useState<boolean>(false);
-  const [objectDetection, setObjectDetection] = useState<boolean>(false);
+    const [operations, setOperations] = useState<Operations>(defaultOperations);
+    const [activeTab, setActiveTab] = useState<string>('upload');
+    const [image, setImage] = useState<File | null>(null);
+    const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const [error, setError] = useState<string | null>(null);
+    const [submitError, setSubmitError] = useState<string | null>(null);
+    const [imageID , setImageID] = useState<string | null>(null);
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files) {
-      setImage(event.target.files[0]);
-      message.success("Image uploaded successfully!");
-    }
-  };
+    const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            const isValid = /\.(jpe?g|png)$/i.test(file.name);
+            if (!isValid) {
+                setError('Please upload a valid image file (.jpeg or .png).');
+                setImage(null);
+                setImagePreview(null);
+                return;
+            }
+            setError(null);
+            setImage(file);
+            setImagePreview(URL.createObjectURL(file));
+        }
+    };
+    
 
-  const handleWidthChange = (value: string) => {
-    if (value.endsWith("%")) {
-      setWidth(value);
-    } else {
-      const intValue = parseInt(value, 10);
-      if (!isNaN(intValue)) {
-        setWidth(intValue);
-      }
-    }
-  };
+    const handleRestorationChange = (upscale: upscale_type, polish: boolean) => {
+        setOperations((prev: Operations) => ({
+            ...prev,
+            restoration: { ...prev.restoration, upscale, polish },
+        }));
+    };
 
-  const handleHeightChange = (value: string) => {
-    if (value.endsWith("%")) {
-      setHeight(value);
-    } else {
-      const intValue = parseInt(value, 10);
-      if (!isNaN(intValue)) {
-        setHeight(intValue);
-      }
-    }
-  };
+    const handleResizingChange = (
+        width: string,
+        height: string,
+        smartCropping: 'none' | 'smart' | 'center'
+    ) => {
+        setOperations((prev) => ({
+            ...prev,
+            resizing: {
+                ...prev.resizing,
+                width,
+                height,
+                smart_cropping: smartCropping,
+            },
+        }));
+    };
 
-  const renderOptions = () => {
-    if (!operation) return null;
+    const handleAdjustmentChange = (hdr: number) => {
+        setOperations((prev: Operations) => ({
+            ...prev,
+            adjustments: { ...prev.adjustments, hdr },
+        }));
+    };
 
-    switch (operation) {
-      case "restoration":
-        return (
-          <div className="mt-4">
-            <Title level={4} style={{ color: "#ffffff" }}>
-              Select Restoration Type
-            </Title>
-            <Radio.Group
-              onChange={(e) => setRestorationType(e.target.value)}
-              value={restorationType}
-            >
-              <Radio value="smart_enhance">Smart Enhance</Radio>
-              <Radio value="smart_resize">Smart Resize</Radio>
-              <Radio value="digital_art">Digital Art</Radio>
-              <Radio value="faces">Faces</Radio>
-              <Radio value="photo">Photo</Radio>
-            </Radio.Group>
-            <div className="mt-2">
-              <label className="text-lg font-semibold" style={{ color: "#ffffff" }}>
-                Apply Polishing
-              </label>
-              <Switch
-                checked={polishing}
-                onChange={setPolishing}
-                className="ml-2"
-              />
-            </div>
-          </div>
+    const handleBackgroundRemovalChange = (value: boolean) => {
+        setOperations((prev: Operations) => ({
+            ...prev,
+            background_removal: value,
+        }));
+    };
+
+    const handleObjectDetectionChange = (value: boolean) => {
+        setOperations((prev: Operations) => ({
+            ...prev,
+            object_detection: value,
+        }));
+    };
+
+    const handleSubmit = () => {
+        // Check if any operation has been selected
+        const hasSelectedOperation = Object.values(operations).some((operation) =>
+            typeof operation === 'object' ? Object.values(operation).some(Boolean) : Boolean(operation)
         );
 
-      case "resizing":
-        return (
-          <div className="mt-4">
-            <Title level={4} style={{ color: "#ffffff" }}>
-              Specify Width and Height
-            </Title>
-            <Input
-              placeholder="Width (px or %)"
-              onChange={(e) => handleWidthChange(e.target.value)}
-              className="mt-2"
-              style={{ backgroundColor: "#333", color: "#fff" }}
+        if (!hasSelectedOperation) {
+            setSubmitError('Please select at least one operation before submitting.');
+            return;
+        }
+
+        setSubmitError(null);
+
+        // Saving image metadata and storing bucket , invoking the serverless function in the backend.
+        const id = saveImage(operations, image!);
+        setImageID(id!);
+
+        
+    };
+
+    return (
+        <div className="bg-gray-900 text-white min-h-screen w-screen flex flex-col items-center justify-center py-10">
+            <h1 className="text-4xl font-bold mb-6">Image Processing Operations</h1>
+
+            <h2 className="text-2xl font-semibold mb-4">Upload Image</h2>
+            <input
+                type="file"
+                accept="image/jpeg, image/png"
+                onChange={handleImageUpload}
+                className="bg-gray-800 border border-gray-700 rounded p-2 mb-4 w-1/2"
             />
-            <Input
-              placeholder="Height (px or %)"
-              onChange={(e) => handleHeightChange(e.target.value)}
-              className="mt-2"
-              style={{ backgroundColor: "#333", color: "#fff" }}
-            />
-            <div className="mt-4">
-              <label className="text-lg font-semibold" style={{ color: "#ffffff" }}>
-                Smart Cropping
-              </label>
-              <select
-                onChange={(e) => setSmartCrop(e.target.value)}
-                value={smartCrop}
-                className="ml-2 border p-1"
-                style={{ backgroundColor: "#333", color: "#fff" }}
-              >
-                <option value="center">Center</option>
-                <option value="smart">Smart</option>
-              </select>
-            </div>
-          </div>
-        );
+            {error && <div className="text-red-400 mb-4">{error}</div>}
+            {imagePreview && (
+                <div className="mb-4">
+                    <h3 className="text-lg font-semibold">Image Preview:</h3>
+                    <img src={imagePreview} alt="Preview" className="mt-2 rounded" />
+                </div>
+            )}
 
-      case "color_adjustment":
-        return (
-          <div className="mt-4">
-            <Title level={4} style={{ color: "#ffffff" }}>
-              Adjust HDR
-            </Title>
-            <Slider min={0} max={100} onChange={setHdr} value={hdr} />
-          </div>
-        );
+            {imagePreview && (
+                <div>
+                    <div className="mb-4 flex space-x-2">
+                        <button
+                            className={`bg-gray-800 hover:bg-gray-700 text-white py-2 px-4 rounded ${activeTab === 'restoration' ? 'bg-purple-600' : ''}`}
+                            onClick={() => setActiveTab('restoration')}
+                        >
+                            Restoration
+                        </button>
+                        <button
+                            className={`bg-gray-800 hover:bg-gray-700 text-white py-2 px-4 rounded ${activeTab === 'resizing' ? 'bg-purple-600' : ''}`}
+                            onClick={() => setActiveTab('resizing')}
+                        >
+                            Resizing
+                        </button>
+                        <button
+                            className={`bg-gray-800 hover:bg-gray-700 text-white py-2 px-4 rounded ${activeTab === 'adjustments' ? 'bg-purple-600' : ''}`}
+                            onClick={() => setActiveTab('adjustments')}
+                        >
+                            Color Adjustments
+                        </button>
+                        <button
+                            className={`bg-gray-800 hover:bg-gray-700 text-white py-2 px-4 rounded ${activeTab === 'backgroundRemoval' ? 'bg-purple-600' : ''}`}
+                            onClick={() => setActiveTab('backgroundRemoval')}
+                        >
+                            Background Removal
+                        </button>
+                        <button
+                            className={`bg-gray-800 hover:bg-gray-700 text-white py-2 px-4 rounded ${activeTab === 'objectDetection' ? 'bg-purple-600' : ''}`}
+                            onClick={() => setActiveTab('objectDetection')}
+                        >
+                            Object Detection
+                        </button>
+                    </div>
 
-      case "background_removal":
-        return (
-          <div className="mt-4">
-            <label className="text-lg font-semibold" style={{ color: "#ffffff" }}>
-              Background Removal
-            </label>
-            <Switch
-              checked={backgroundRemoval}
-              onChange={setBackgroundRemoval}
-              className="ml-2"
-            />
-          </div>
-        );
+                    {/* Restoration Tab */}
+                    {activeTab === 'restoration' && (
+                        <div className="mb-6">
+                            <h2 className="text-xl font-semibold">Restoration Options</h2>
+                            <div className="mb-4">
+                                <label className="mr-2">Upscale:</label>
+                                <select
+                                    onChange={(e) =>
+                                        handleRestorationChange(
+                                            e.target.value as upscale_type,
+                                            operations.restoration.polish
+                                        )
+                                    }
+                                    value={operations.restoration.upscale || 'none'}
+                                    className="bg-gray-800 border border-gray-700 rounded p-2 w-1/2"
+                                >
+                                    <option value="none">None</option>
+                                    <option value="smart_enhance">Smart Enhance</option>
+                                    <option value="digital_art">Digital Art</option>
+                                    <option value="smart_resize">Smart Resize</option>
+                                    <option value="photo">Photo</option>
+                                    <option value="faces">Faces</option>
+                                </select>
+                            </div>
+                            <div className="mb-4">
+                                <label className="mr-2">Polish:</label>
+                                <input
+                                    type="checkbox"
+                                    checked={operations.restoration.polish}
+                                    onChange={(e) =>
+                                        handleRestorationChange(
+                                            operations.restoration.upscale,
+                                            e.target.checked
+                                        )
+                                    }
+                                    className="mr-2"
+                                />
+                                <span>Apply Polish</span>
+                            </div>
+                        </div>
+                    )}
 
-      case "object_detection":
-        return (
-          <div className="mt-4">
-            <label className="text-lg font-semibold" style={{ color: "#ffffff" }}>
-              Object Detection
-            </label>
-            <Switch
-              checked={objectDetection}
-              onChange={setObjectDetection}
-              className="ml-2"
-            />
-          </div>
-        );
+                    {/* Resizing Tab */}
+                    {activeTab === 'resizing' && (
+                        <div className="mb-6">
+                            <h2 className="text-xl font-semibold">Resizing Options</h2>
+                            <div className="mb-4">
+                                <label className="mr-2">Width:</label>
+                                <input
+                                    type="text"
+                                    value={operations.resizing.width || ''}
+                                    onChange={(e) =>
+                                        handleResizingChange(
+                                            e.target.value,
+                                            operations.resizing.height,
+                                            operations.resizing.smart_cropping as 'none' | 'smart' | 'center'
+                                        )
+                                    }
+                                    className="bg-gray-800 border border-gray-700 rounded p-2 w-1/2"
+                                />
+                            </div>
+                            <div className="mb-4">
+                                <label className="mr-2">Height:</label>
+                                <input
+                                    type="text"
+                                    value={operations.resizing.height || ''}
+                                    onChange={(e) =>
+                                        handleResizingChange(
+                                            operations.resizing.width,
+                                            e.target.value,
+                                            operations.resizing.smart_cropping as 'none' | 'smart' | 'center'
+                                        )
+                                    }
+                                    className="bg-gray-800 border border-gray-700 rounded p-2 w-1/2"
+                                />
+                            </div>
+                            <div className="mb-4">
+                                <label className="mr-2">Smart Cropping:</label>
+                                <select
+                                    onChange={(e) =>
+                                        handleResizingChange(
+                                            operations.resizing.width,
+                                            operations.resizing.height,
+                                            e.target.value as 'none' | 'smart' | 'center'
+                                        )
+                                    }
+                                    value={operations.resizing.smart_cropping}
+                                    className="bg-gray-800 border border-gray-700 rounded p-2 w-1/2"
+                                >
+                                    <option value="none">None</option>
+                                    <option value="smart">Smart</option>
+                                    <option value="center">Center</option>
+                                </select>
+                            </div>
+                        </div>
+                    )}
 
-      default:
-        return null;
-    }
-  };
+                    {/* Adjustments Tab */}
+                    {activeTab === 'adjustments' && (
+                        <div className="mb-6">
+                            <h2 className="text-xl font-semibold">Color Adjustments</h2>
+                            <div className="mb-4">
+                                <label className="mr-2">HDR Level:</label>
+                                <input
+                                    type="range"
+                                    min="0"
+                                    max="100"
+                                    value={operations.adjustments.hdr || '50'}
+                                    onChange={(e) => handleAdjustmentChange(Number(e.target.value))}
+                                    className="bg-gray-800 border border-gray-700 rounded p-2 w-1/2"
+                                />
+                            </div>
+                        </div>
+                    )}
 
-  return (
-    <div className="flex flex-col items-center bg-gray-900 p-8 min-h-screen w-screen">
-      <Title level={2} style={{ color: "#ffffff" }}>
-        AI-Powered Image Operations
-      </Title>
-      <Paragraph style={{ color: "#aaaaaa" }}>
-        Upload an image and choose your desired operation:
-      </Paragraph>
+                    {/* Background Removal Tab */}
+                    {activeTab === 'backgroundRemoval' && (
+                        <div className="mb-6">
+                            <h2 className="text-xl font-semibold">Background Removal</h2>
+                            <div className="mb-4">
+                                <label className="mr-2">Remove Background:</label>
+                                <input
+                                    type="checkbox"
+                                    checked={operations.background_removal}
+                                    onChange={(e) => handleBackgroundRemovalChange(e.target.checked)}
+                                    className="mr-2"
+                                />
+                                <span>Enable</span>
+                            </div>
+                        </div>
+                    )}
 
-      <input
-        type="file"
-        accept="image/*"
-        onChange={handleImageUpload}
-        className="mb-4 bg-white p-2 border rounded-lg cursor-pointer shadow-md"
-      />
+                    {/* Object Detection Tab */}
+                    {activeTab === 'objectDetection' && (
+                        <div className="mb-6">
+                            <h2 className="text-xl font-semibold">Object Detection</h2>
+                            <div className="mb-4">
+                                <label className="mr-2">Detect Objects:</label>
+                                <input
+                                    type="checkbox"
+                                    checked={operations.object_detection}
+                                    onChange={(e) => handleObjectDetectionChange(e.target.checked)}
+                                    className="mr-2"
+                                />
+                                <span>Enable</span>
+                            </div>
+                        </div>
+                    )}
 
-      {image && (
-        <div className="flex flex-col items-center mt-4">
-          <Paragraph style={{ color: "#ffffff" }}>
-            Uploaded File: {image.name}
-          </Paragraph>
-          <img
-            src={URL.createObjectURL(image)}
-            alt="Uploaded Preview"
-            className="mt-2 mb-4 w-48 h-48 object-cover border rounded-lg shadow-lg"
-          />
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 mb-4">
-            {[
-              "restoration",
-              "resizing",
-              "color_adjustment",
-              "background_removal",
-              "object_detection",
-            ].map((op) => (
-              <Button
-                key={op}
-                onClick={() => setOperation(op)}
-                className="p-4 text-lg font-semibold bg-green-600 hover:bg-green-700 text-white rounded-lg transition duration-200 ease-in-out"
-              >
-                {op.charAt(0).toUpperCase() + op.slice(1).replace(/_/g, " ")}
-              </Button>
-            ))}
-          </div>
-
-          {renderOptions()}
-
-          <Button
-            type="primary"
-            className="bg-green-600 hover:bg-green-700 text-white font-semibold mt-6 py-2 px-4 rounded-lg transition duration-200 ease-in-out"
-            onClick={() => {
-              message.info("Processing image...");
-            }}
-          >
-            Process Image
-          </Button>
+                    <button
+                        className="bg-blue-600 hover:bg-blue-500 text-white py-2 px-4 rounded"
+                        onClick={handleSubmit}
+                    >
+                        Submit
+                    </button>
+                    {submitError && <div className="text-red-400 mt-4">{submitError}</div>}
+                </div>
+            )}
         </div>
-      )}
-    </div>
-  );
+    );
 };
 
 export default Home;

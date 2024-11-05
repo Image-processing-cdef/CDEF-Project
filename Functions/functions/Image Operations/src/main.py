@@ -1,3 +1,4 @@
+import json
 from Object_Detection.object_det import object_detection
 from appwrite.client import Client
 from appwrite.services.databases import Databases
@@ -10,6 +11,8 @@ import os
 # from your_module import process_image_operations
 
 def main(context):
+
+    payload = json.loads(os.getenv("APPWRITE_FUNCTION_EVENT_DATA"))
     
     client = (
         Client()
@@ -27,7 +30,7 @@ def main(context):
         
 
     # Retrieve the file ID from the event context
-    file_id = context.req.payload["$id"]
+    file_id = payload["$id"]
     image_database = os.environ["IMAGE_DATABASE_ID"]
     image_operation_collection = os.environ["IMAGE_OPERATION_COLLECTION_ID"]
 
@@ -46,8 +49,7 @@ def main(context):
         file_path = document.get("file_path")  # Assuming file_path is stored in the document
 
         # Call the process_image_operations function
-        if operations.get("enhancement"):
-            output_image_url = process_image_operations(file_path, operations)
+        output_image_url = process_image_operations(file_path, operations, client, storage)
         
         #Object Detection
         if operations.get("object_detection"):
