@@ -1,0 +1,24 @@
+{
+  "input": "File path",
+  "operations": {
+    "restorations": {
+      "upscale": "smart_enhance || smart_resize || photo || faces || digital_art",
+      "decompress": "auto",
+      "polish": "boolean"
+    },
+
+    "resizing": {
+        "width" : "2000 || 50%",
+        "height" : "2000 || 50%",
+        "fit" : {
+            "crop" : "smart || center"
+        }
+    },
+    "adjustments" : {
+        "hdr" : "0 - 100"
+    },
+    "background" : {
+        "remove" : "boolean"
+    }
+  }
+}

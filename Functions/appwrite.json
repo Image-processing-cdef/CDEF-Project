@@ -37,6 +37,237 @@
             }
         }
     },
+    "databases": [
+        {
+            "$id": "67237d2f0007338c564f",
+            "name": "Images",
+            "enabled": true
+        }
+    ],
+    "collections": [
+        {
+            "$id": "67237d41001b7bce135e",
+            "$permissions": [
+                "create(\"users\")",
+                "read(\"users\")",
+                "update(\"users\")",
+                "create(\"label:admin\")",
+                "read(\"label:admin\")",
+                "update(\"label:admin\")",
+                "delete(\"label:admin\")",
+                "create(\"user:6720f020124fd9a970b4\")",
+                "read(\"user:6720f020124fd9a970b4\")",
+                "update(\"user:6720f020124fd9a970b4\")",
+                "delete(\"user:6720f020124fd9a970b4\")"
+            ],
+            "databaseId": "67237d2f0007338c564f",
+            "name": "image_operations",
+            "enabled": true,
+            "documentSecurity": false,
+            "attributes": [
+                {
+                    "key": "file_id",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 36,
+                    "default": null
+                },
+                {
+                    "key": "progress_state",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 20,
+                    "default": null
+                },
+                {
+                    "key": "operations",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedCollection": "672dd27e0022ab70502d",
+                    "relationType": "oneToOne",
+                    "twoWay": false,
+                    "twoWayKey": "672dd2fe0022d958ee96",
+                    "onDelete": "setNull",
+                    "side": "parent"
+                }
+            ],
+            "indexes": []
+        },
+        {
+            "$id": "672dd27e0022ab70502d",
+            "$permissions": [
+                "create(\"users\")",
+                "read(\"users\")",
+                "update(\"users\")"
+            ],
+            "databaseId": "67237d2f0007338c564f",
+            "name": "operations",
+            "enabled": true,
+            "documentSecurity": false,
+            "attributes": [
+                {
+                    "key": "background_removal",
+                    "type": "boolean",
+                    "required": true,
+                    "array": false,
+                    "default": null
+                },
+                {
+                    "key": "object_detection",
+                    "type": "boolean",
+                    "required": true,
+                    "array": false,
+                    "default": null
+                },
+                {
+                    "key": "resizing",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedCollection": "672dd52d0007a377e4cd",
+                    "relationType": "oneToOne",
+                    "twoWay": false,
+                    "twoWayKey": "672dd751002efaa40a73",
+                    "onDelete": "setNull",
+                    "side": "parent"
+                },
+                {
+                    "key": "restoration",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedCollection": "672dd53a0018e6b2f603",
+                    "relationType": "oneToOne",
+                    "twoWay": false,
+                    "twoWayKey": "672dd75c002f35999dfc",
+                    "onDelete": "setNull",
+                    "side": "parent"
+                },
+                {
+                    "key": "adjustment",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedCollection": "672dd54b00280244f0d1",
+                    "relationType": "oneToOne",
+                    "twoWay": false,
+                    "twoWayKey": "672dd76c000f6ddfe4ab",
+                    "onDelete": "setNull",
+                    "side": "parent"
+                }
+            ],
+            "indexes": []
+        },
+        {
+            "$id": "672dd52d0007a377e4cd",
+            "$permissions": [
+                "create(\"users\")",
+                "read(\"users\")",
+                "update(\"users\")"
+            ],
+            "databaseId": "67237d2f0007338c564f",
+            "name": "resizing",
+            "enabled": true,
+            "documentSecurity": false,
+            "attributes": [
+                {
+                    "key": "width",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 10,
+                    "default": null
+                },
+                {
+                    "key": "height",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 10,
+                    "default": null
+                },
+                {
+                    "key": "smart_cropping",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "elements": [
+                        "none",
+                        "smart",
+                        "center"
+                    ],
+                    "format": "enum",
+                    "default": null
+                }
+            ],
+            "indexes": []
+        },
+        {
+            "$id": "672dd53a0018e6b2f603",
+            "$permissions": [
+                "create(\"users\")",
+                "read(\"users\")",
+                "update(\"users\")"
+            ],
+            "databaseId": "67237d2f0007338c564f",
+            "name": "restoration",
+            "enabled": true,
+            "documentSecurity": false,
+            "attributes": [
+                {
+                    "key": "upscale",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "elements": [
+                        "none",
+                        "smart_enhance",
+                        "digital_art",
+                        "smart_resize",
+                        "photo",
+                        "faces"
+                    ],
+                    "format": "enum",
+                    "default": null
+                },
+                {
+                    "key": "polish",
+                    "type": "boolean",
+                    "required": true,
+                    "array": false,
+                    "default": null
+                }
+            ],
+            "indexes": []
+        },
+        {
+            "$id": "672dd54b00280244f0d1",
+            "$permissions": [
+                "create(\"users\")",
+                "read(\"users\")",
+                "update(\"users\")"
+            ],
+            "databaseId": "67237d2f0007338c564f",
+            "name": "adjustment",
+            "enabled": true,
+            "documentSecurity": false,
+            "attributes": [
+                {
+                    "key": "hdr",
+                    "type": "integer",
+                    "required": true,
+                    "array": false,
+                    "min": 0,
+                    "max": 100,
+                    "default": null
+                }
+            ],
+            "indexes": []
+        }
+    ],
     "buckets": [
         {
             "$id": "6720f35c003492309dd4",
@@ -46,7 +277,8 @@
                 "create(\"user:6720f020124fd9a970b4\")",
                 "read(\"user:6720f020124fd9a970b4\")",
                 "update(\"user:6720f020124fd9a970b4\")",
-                "delete(\"user:6720f020124fd9a970b4\")"
+                "delete(\"user:6720f020124fd9a970b4\")",
+                "read(\"any\")"
             ],
             "fileSecurity": false,
             "name": "uploaded",
@@ -60,8 +292,8 @@
     ],
     "functions": [
         {
-            "$id": "672217370029c876a2c9",
-            "name": "Image Operations",
+            "$id": "672de3a90037d1195ef7",
+            "name": "Image_Operations",
             "runtime": "python-ml-3.11",
             "execute": [
                 "any"
@@ -76,7 +308,7 @@
             "logging": true,
             "entrypoint": "src/main.py",
             "commands": "pip install -r requirements.txt",
-            "path": "functions/Image Operations"
+            "path": "functions/Image_Operations"
         }
     ]
 }

@@ -4,9 +4,12 @@ import Home from "./Pages/Root/Home";
 import Auth from "./Pages/Auth/Auth";
 import { getUserData } from "./utils/appwrite";
 import { Models } from "appwrite";
+import Result from "./Pages/Root/Result";
 
 function App() {
-  const [user, setUser] = useState<Models.User<Models.Preferences> | null>(null);
+  const [user, setUser] = useState<Models.User<Models.Preferences> | null>(
+    null
+  );
   const [loading, setLoading] = useState(true); // New loading state
 
   useEffect(() => {
@@ -25,6 +28,10 @@ function App() {
       <Route
         path="/"
         element={user ? <Home /> : <Navigate to="/auth" replace />}
+      />
+      <Route
+        path="/result/:id"
+        element={user ? <Result /> : <Navigate to="/auth" replace />}
       />
       <Route
         path="/auth/*"

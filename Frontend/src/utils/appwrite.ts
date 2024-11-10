@@ -6,13 +6,17 @@ import {
   ID,
   Storage,
 } from "appwrite";
-import { Operations } from "../types/image_operations";
+import { Operations, Output } from "../types/image_operations";
 
-const databaseID = import.meta.env.VITE_APPWRITE_DATABASE_ID;
-const collectionID = import.meta.env.VITE_APPWRITE_COLLECTION_ID;
+const databaseID = import.meta.env.VITE_APPWRITE_DATABASE;
+const collectionID = import.meta.env.VITE_APPWRITE_COLLECTION;
 const bucketID = import.meta.env.VITE_APPWRITE_BUCKET;
+const resizing = import.meta.env.VITE_APPWRITE_RESIZING_COLLECTION;
+const restoration = import.meta.env.VITE_APPWRITE_RESTORATION_COLLECTION;
+const adjustments = import.meta.env.VITE_APPWRITE_ADJUSTMENT_COLLECTION;
+const operationsID = import.meta.env.VITE_APPWRITE_OPERATIONS_COLLECTION;
 
-const client = new Client()
+export const client = new Client()
   .setEndpoint(import.meta.env.VITE_APPWRITE_URL)
   .setProject(import.meta.env.VITE_APPWRITE_PROJECT);
 
@@ -25,17 +29,63 @@ export const createImageMetadata = async (
   operations: Operations
 ) => {
   try {
+    const restorationDoc = await databases.createDocument(
+      databaseID,
+      restoration, // collection ID for restoration
+      ID.unique(),
+      {
+        upscale: operations.restoration.upscale,
+        polish: operations.restoration.polish,
+      }
+    );
+
+    const resizingDoc = await databases.createDocument(
+      databaseID,
+      resizing, // collection ID for resizing
+      ID.unique(),
+      {
+        width: operations.resizing.width,
+        height: operations.resizing.height,
+        smart_cropping: operations.resizing.smart_cropping,
+      }
+    );
+
+    const adjustmentsDoc = await databases.createDocument(
+      databaseID,
+      adjustments, // collection ID for adjustments
+      ID.unique(),
+      {
+        hdr: operations.adjustments.hdr,
+      }
+    );
+
+    const operations_doc = await databases.createDocument(
+      databaseID,
+      operationsID, // collection ID for operations
+      ID.unique(),
+      {
+        restoration: restorationDoc.$id, // Relation ID for restoration
+        resizing: resizingDoc.$id, // Relation ID for resizing
+        adjustment: adjustmentsDoc.$id, // Relation ID for adjustments
+        background_removal: operations.background_removal,
+        object_detection: operations.object_detection,
+        image_compression: operations.image_compression,
+      }
+    );
+
+    // Creating final image metadata document
     const response = await databases.createDocument(
       databaseID,
       collectionID,
       file_id,
       {
         file_id,
-        operations,
-        created_at: Date.now(),
+        operations: operations_doc.$id,
         progress_state: "initiated",
       }
     );
+    console.log(response);
+
     return response;
   } catch (error) {
     const appwriteError = error as AppwriteException;
@@ -44,35 +94,81 @@ export const createImageMetadata = async (
   }
 };
 
-export const saveImage = ( operations : Operations , file : File) =>{
+export const saveImage = async (operations: Operations, file: File) => {
   const id = ID.unique();
   try {
-    createImageMetadata(id, operations);
-    addToBucket(file, id);
+    await createImageMetadata(id, operations);
+    await addToBucket(file, id);
     return id;
-  }
-  catch (error) {
+  } catch (error) {
     console.warn("Error saving image:", error);
   }
-}
+};
 
+export const fetchImageStatus = async (id: string) => {
+  const documentID = id;
+  try {
+    const response = await databases.getDocument(
+      databaseID,
+      collectionID,
+      documentID
+    );
 
-export const addToBucket = async (file : File , file_id : string) => {
-  try{
+    const output_image_url =
+      response.progress_state === "completed"
+        ? response.output_image_url
+        : null;
+    const object_image_url =
+      response.progress_state === "completed"
+        ? response.object_image_url
+        : null;
+
+    return {
+      status: response.progress_state,
+      output_image_url,
+      object_image_url,
+    };
+  } catch (error) {
+    const appwriteError = error as AppwriteException;
+    console.warn("Error fetching image status:", appwriteError.message);
+    return null;
+  }
+};
+
+export const imageCleanup = async (file_id: string) => {
+  try {
+    const response = await databases.deleteDocument(
+      databaseID,
+      collectionID,
+      file_id
+    );
+    const bucketCleanup = await storage.deleteFile(bucketID, file_id);
+
+    return {
+      response,
+      bucketCleanup,
+    };
+  } catch (error) {
+    const appwriteError = error as AppwriteException;
+    console.warn("Error deleting image metadata:", appwriteError.message);
+    return null;
+  }
+};
+
+export const addToBucket = async (file: File, file_id: string) => {
+  try {
     const result = await storage.createFile(
       bucketID, // bucketId
       file_id, // fileId
-      file,
-  );
-  return result;
-  }
-  catch (error) {
+      file
+    );
+    return result;
+  } catch (error) {
     const appwriteError = error as AppwriteException;
     console.warn("Error uploading file to bucket:", appwriteError.message);
     return null;
   }
-}
-
+};
 
 export const getUserData = async () => {
   try {
@@ -123,4 +219,21 @@ export const register = async (email: string, password: string) => {
   }
 };
 
-export default client;
+export const subscribeToDocument = ({
+  documentID,
+  onUpdate,
+}: {
+  documentID: string;
+  onUpdate: (payload: any) => void;
+}) => {
+  return client.subscribe(
+    `databases.${databaseID}.collections.${collectionID}.documents.${documentID}`,
+    (response) => {
+      if (
+        response.events.includes("databases.*.collections.*.documents.*.update")
+      ) {
+        onUpdate(response.payload);
+      }
+    }
+  );
+};

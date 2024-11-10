@@ -1,0 +1,7 @@
+appwrite
+asyncio
+aiohttp
+Pillow
+numpy
+tensorflow
+opencv-python-headless
