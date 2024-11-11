@@ -8,8 +8,8 @@ import {
 } from "appwrite";
 import { Operations, Output } from "../types/image_operations";
 
-const databaseID = import.meta.env.VITE_APPWRITE_DATABASE;
-const collectionID = import.meta.env.VITE_APPWRITE_COLLECTION;
+export const databaseID = import.meta.env.VITE_APPWRITE_DATABASE;
+export const collectionID = import.meta.env.VITE_APPWRITE_COLLECTION;
 const bucketID = import.meta.env.VITE_APPWRITE_BUCKET;
 const resizing = import.meta.env.VITE_APPWRITE_RESIZING_COLLECTION;
 const restoration = import.meta.env.VITE_APPWRITE_RESTORATION_COLLECTION;
@@ -219,21 +219,4 @@ export const register = async (email: string, password: string) => {
   }
 };
 
-export const subscribeToDocument = ({
-  documentID,
-  onUpdate,
-}: {
-  documentID: string;
-  onUpdate: (payload: any) => void;
-}) => {
-  return client.subscribe(
-    `databases.${databaseID}.collections.${collectionID}.documents.${documentID}`,
-    (response) => {
-      if (
-        response.events.includes("databases.*.collections.*.documents.*.update")
-      ) {
-        onUpdate(response.payload);
-      }
-    }
-  );
-};
+
