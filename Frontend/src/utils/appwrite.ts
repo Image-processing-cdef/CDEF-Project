@@ -6,7 +6,7 @@ import {
   ID,
   Storage,
 } from "appwrite";
-import { Operations, Output } from "../types/image_operations";
+import { Operations} from "../types/image_operations";
 
 export const databaseID = import.meta.env.VITE_APPWRITE_DATABASE;
 export const collectionID = import.meta.env.VITE_APPWRITE_COLLECTION;
