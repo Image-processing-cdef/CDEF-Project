@@ -3,8 +3,6 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Loading } from "../../Components/Loading";
 import { Models } from "appwrite";
 import { client, collectionID, databaseID } from "../../utils/appwrite";
-
-// Assume imageCleanup is already defined and imported
 import { imageCleanup } from "../../utils/appwrite";
 
 const Result = () => {
@@ -48,6 +46,26 @@ const Result = () => {
     navigate("/");
   };
 
+  // Function to handle download by fetching the image as a blob
+  const handleDownload = async (url: string, filename: string) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+
+      document.body.appendChild(link);
+      link.click();
+
+      document.body.removeChild(link);
+      URL.revokeObjectURL(link.href); // Clean up the object URL after download
+    } catch (error) {
+      console.error("Error downloading the image:", error);
+    }
+  };
+
   if (loading) {
     return (
       <div className="bg-gray-900 h-screen w-screen flex items-center justify-center">
@@ -66,8 +84,14 @@ const Result = () => {
               <img
                 src={outputImageUrl}
                 alt="Output"
-                className="w-full h-auto rounded-md shadow-lg"
+                className="w-full h-auto rounded-md shadow-lg mb-2"
               />
+              <button
+                onClick={() => handleDownload(outputImageUrl, "enhanced_image.jpg")}
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 w-full lg:w-auto text-center"
+              >
+                Download Enhanced Image
+              </button>
             </div>
           )}
           {objectImageUrl && objectImageUrl !== "none" && (
@@ -76,8 +100,14 @@ const Result = () => {
               <img
                 src={objectImageUrl}
                 alt="Object"
-                className="w-full h-auto rounded-md shadow-lg"
+                className="w-full h-auto rounded-md shadow-lg mb-2"
               />
+              <button
+                onClick={() => handleDownload(objectImageUrl, "object_detection_image.jpg")}
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 w-full lg:w-auto text-center"
+              >
+                Download Object Detection Image
+              </button>
             </div>
           )}
         </div>
