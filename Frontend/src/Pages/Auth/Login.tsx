@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { login } from "../../utils/appwrite";
 
 interface LoginProps {
@@ -10,7 +9,7 @@ export default function Login({ toggleForm }: LoginProps) {
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
-  const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
 
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -31,19 +30,22 @@ export default function Login({ toggleForm }: LoginProps) {
       setError("Password must be at least 8 characters long and include a number and a special character.");
       return;
     }
+
+    setIsLoading(true);
+    setError(null);
   
     try {
       const account = await login(email, password);
       if (account) {
-        alert(`Successfully logged in on: ${account.clientName}`);
-        // Trigger the redirection after a small delay
-        setTimeout(() => navigate("/"), 200); // Small delay before redirect
+        window.location.href = '/'; // Force a full page reload
       } else {
         setError("Failed to log in. Please check your credentials.");
       }
     } catch (err) {
       console.error(err);
       setError("Failed to log in. Please check your credentials.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -58,6 +60,7 @@ export default function Login({ toggleForm }: LoginProps) {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           className="bg-gray-700 border border-gray-600 p-2 rounded focus:outline-none focus:ring focus:ring-blue-400"
+          disabled={isLoading}
           required
         />
         <input
@@ -66,13 +69,15 @@ export default function Login({ toggleForm }: LoginProps) {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           className="bg-gray-700 border border-gray-600 p-2 rounded focus:outline-none focus:ring focus:ring-blue-400"
+          disabled={isLoading}
           required
         />
         <button
           type="submit"
-          className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded transition duration-200"
+          className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded transition duration-200 disabled:opacity-50"
+          disabled={isLoading}
         >
-          Login
+          {isLoading ? "Logging in..." : "Login"}
         </button>
       </form>
       <div className="text-gray-400 mt-4 text-center">

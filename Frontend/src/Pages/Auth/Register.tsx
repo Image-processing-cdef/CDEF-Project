@@ -1,6 +1,6 @@
 import { FormEvent, useState } from "react";
 import { register, login } from "../../utils/appwrite"; 
-import { useNavigate } from "react-router-dom";
+
 
 interface RegisterProps {
   toggleForm: () => void;
@@ -11,7 +11,8 @@ export default function Register({ toggleForm }: RegisterProps) {
   const [password, setPassword] = useState<string>("");
   const [confirmPassword, setConfirmPassword] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
-  const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
+ 
 
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -39,23 +40,25 @@ export default function Register({ toggleForm }: RegisterProps) {
       return;
     }
 
+    setIsLoading(true);
+    setError(null);
+
     try {
       const account = await register(email, password);
       if (account) {
-        alert(`Successfully created account with ID: ${account?.$id}`);
-    
-        // Automatically log in the user after successful registration
         const loggedInAccount = await login(email, password);
         if (loggedInAccount) {
-          // Trigger the redirection immediately after login
-
-          setTimeout(() => navigate("/"), 200); // Navigate to home after login
+          window.location.href = '/'; // Force a full page reload
         } else {
           setError("Account created, but login failed. Please log in manually.");
+          toggleForm();
         }
       }
     } catch (err) {
+      console.error(err);
       setError("Failed to create account. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -70,6 +73,7 @@ export default function Register({ toggleForm }: RegisterProps) {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           className="bg-gray-700 border border-gray-600 p-2 rounded focus:outline-none focus:ring focus:ring-blue-400"
+          disabled={isLoading}
           required
         />
         <input
@@ -78,6 +82,7 @@ export default function Register({ toggleForm }: RegisterProps) {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           className="bg-gray-700 border border-gray-600 p-2 rounded focus:outline-none focus:ring focus:ring-blue-400"
+          disabled={isLoading}
           required
         />
         <input
@@ -86,13 +91,15 @@ export default function Register({ toggleForm }: RegisterProps) {
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
           className="bg-gray-700 border border-gray-600 p-2 rounded focus:outline-none focus:ring focus:ring-blue-400"
+          disabled={isLoading}
           required
         />
         <button
           type="submit"
-          className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded transition duration-200"
+          className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded transition duration-200 disabled:opacity-50"
+          disabled={isLoading}
         >
-          Sign Up
+          {isLoading ? "Creating account..." : "Sign Up"}
         </button>
       </form>
       <div className="text-gray-400 mt-4 text-center">

@@ -8,28 +8,23 @@ import Result from "./Pages/Root/Result";
 import { Loading } from "./Components/Loading";
 
 function App() {
-  const [user, setUser] = useState<Models.User<Models.Preferences> | null>(
-    null
-  );
-  const [loading, setLoading] = useState(true); // New loading state
+  const [user, setUser] = useState<Models.User<Models.Preferences> | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const checkUser = async () => {
       try {
-        const user = await getUserData();
-        return user
+        const userData = await getUserData();
+        setUser(userData);
       } catch (err) {
         console.error("Failed to fetch user data:", err);
+        setUser(null);
+      } finally {
+        setLoading(false);
       }
     };
-    checkUser().then((user) => {
-      if (user) {
-        setUser(user);
-      }
-      setLoading(false);
-    }).catch(() => {console.error("Failed to fetch user data")});
+    checkUser();
   }, []);
-  
 
   if (loading) {
     return (
