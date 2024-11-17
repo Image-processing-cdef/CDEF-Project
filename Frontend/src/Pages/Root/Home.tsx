@@ -222,25 +222,32 @@ const Home: React.FC = () => {
   };
 
   return (
-    <div className="relative min-h-screen w-screen">
+    <div className="relative min-h-screen w-screen overflow-auto">
       <canvas
         ref={canvasRef}
         className="absolute top-0 left-0 w-full h-full"
-        style={{ zIndex: -1 }}
+        style={{
+          zIndex: -1,
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
+        }}
       />
-      <div className="bg-transparent text-gray-200 min-h-screen flex flex-col items-center justify-center py-10">
-        <h1 className="text-4xl font-bold mb-6">Image Processing Operations</h1>
+      <div className="bg-transparent text-gray-200 min-h-screen flex flex-col items-center justify-start py-10 w-full">
+        <h1 className="text-4xl font-bold mb-6 text-center">Image Processing Operations</h1>
 
         <h2 className="text-2xl font-semibold mb-4">Upload Image</h2>
         <input
           type="file"
           accept="image/jpeg, image/png"
           onChange={handleImageUpload}
-          className="bg-[#1c2b2f] border border-gray-700 rounded p-2 mb-4 w-1/2 text-gray-300"
+          className="bg-[#1c2b2f] border border-gray-700 rounded p-2 mb-4 w-4/5 sm:w-1/2 text-gray-300"
         />
         {error && <div className="text-red-400 mb-4">{error}</div>}
         {imagePreview && (
-          <div className="mb-4">
+          <div className="mb-4 max-md:p-3">
             <h3 className="text-lg font-semibold">Image Preview:</h3>
             <img src={imagePreview} alt="Preview" className="mt-2 rounded max-h-[40rem] w-auto object-contain" />
           </div>
@@ -248,11 +255,11 @@ const Home: React.FC = () => {
 
         {imagePreview && (
           <div>
-            <div className="mb-4 flex space-x-2">
+            <div className="mb-4 flex flex-wrap justify-center space-x-2 max-md:p-3">
               {["restoration", "resizing", "adjustments", "backgroundRemoval", "objectDetection", "imageCompression"].map((tab) => (
                 <button
                   key={tab}
-                  className={`bg-[#1c2b2f] hover:bg-[#273a3d] text-gray-200 py-2 px-4 rounded ${
+                  className={`bg-[#1c2b2f] hover:bg-[#273a3d] text-gray-200 py-2 px-4 rounded mb-2 ${
                     activeTab === tab ? "bg-green-600" : ""
                   }`}
                   onClick={() => setActiveTab(tab)}
@@ -261,20 +268,17 @@ const Home: React.FC = () => {
                 </button>
               ))}
             </div>
-
             {renderActiveTab()}
-
-            <button
-              onClick={handleSubmit}
-              className="mt-4 bg-green-600 hover:bg-green-500 text-gray-200 py-2 px-4 rounded"
-            >
-              Submit
-            </button>
-            {submitError && (
-              <div className="text-red-400 mt-4">{submitError}</div>
-            )}
           </div>
         )}
+
+        {submitError && <div className="text-red-500 mt-4">{submitError}</div>}
+        <button
+          onClick={handleSubmit}
+          className="bg-green-500 text-white py-2 px-4 rounded mt-6 hover:bg-green-600"
+        >
+          Process Image
+        </button>
       </div>
     </div>
   );
