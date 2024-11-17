@@ -6,9 +6,9 @@ import { client, collectionID, databaseID } from "../../utils/appwrite";
 import { imageCleanup } from "../../utils/appwrite";
 
 const Result = () => {
-  const { id } = useParams<{ id: string }>(); // File ID from URL params
-  const [loading, setLoading] = useState<boolean>(true); // Loading state
-  const navigate = useNavigate(); // Navigate function
+  const { id } = useParams<{ id: string }>(); // Get 'id' from URL params
+  const [loading, setLoading] = useState<boolean>(true);
+  const navigate = useNavigate();
   const [outputImageUrl, setOutputImageUrl] = useState<string | null>(null);
   const [objectImageUrl, setObjectImageUrl] = useState<string | null>(null);
 
@@ -17,16 +17,11 @@ const Result = () => {
       `databases.${databaseID}.collections.${collectionID}.documents.${id}`,
       (response) => {
         if (
-          response.events.includes(
-            "databases.*.collections.*.documents.*.update"
-          )
+          response.events.includes("databases.*.collections.*.documents.*.update")
         ) {
-          console.log("Document is updated");
-
           const payload = response.payload as Models.Document;
 
           if (payload.progress_state === "completed") {
-            console.log("Document is completed");
             setOutputImageUrl(payload.output_image_url);
             setObjectImageUrl(payload.output_object_url);
             setLoading(false);
@@ -36,17 +31,15 @@ const Result = () => {
     );
 
     return () => {
-      unsubscribe();
-      // Call cleanup function on unmount
+      unsubscribe(); // Cleanup the subscription
     };
-  }, []);
+  }, [id]); // Add id as dependency to re-run the effect
 
   const handleTryAnother = () => {
     imageCleanup(id!); // Cleanup before redirecting
-    navigate("/");
+    navigate("/"); // Navigate to the home page
   };
 
-  // Function to handle download by fetching the image as a blob
   const handleDownload = async (url: string, filename: string) => {
     try {
       const response = await fetch(url);
@@ -58,9 +51,8 @@ const Result = () => {
 
       document.body.appendChild(link);
       link.click();
-
       document.body.removeChild(link);
-      URL.revokeObjectURL(link.href); // Clean up the object URL after download
+      URL.revokeObjectURL(link.href);
     } catch (error) {
       console.error("Error downloading the image:", error);
     }
@@ -75,7 +67,7 @@ const Result = () => {
   }
 
   return (
-    <div className="bg-gray-900 min-h-screen lg:w-screen w-full flex flex-col items-center justify-center p-4">
+    <div className="bg-gray-900 min-h-screen flex flex-col items-center justify-center p-4">
       <div className="max-w-4xl w-full bg-gray-800 p-6 rounded-lg shadow-lg">
         <div className="flex flex-col lg:flex-row items-center lg:space-x-8">
           {outputImageUrl && (
@@ -88,7 +80,7 @@ const Result = () => {
               />
               <button
                 onClick={() => handleDownload(outputImageUrl, "enhanced_image.jpg")}
-                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 w-full lg:w-auto text-center"
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
               >
                 Download Enhanced Image
               </button>
@@ -104,7 +96,7 @@ const Result = () => {
               />
               <button
                 onClick={() => handleDownload(objectImageUrl, "object_detection_image.jpg")}
-                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 w-full lg:w-auto text-center"
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
               >
                 Download Object Detection Image
               </button>
@@ -114,7 +106,7 @@ const Result = () => {
         <div className="mt-6">
           <button
             onClick={handleTryAnother}
-            className="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full lg:w-auto"
+            className="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700"
           >
             Try Another
           </button>
