@@ -7,18 +7,21 @@ import {
   Storage,
 } from "appwrite";
 import { Operations} from "../types/image_operations";
+import { config } from "./config";
 
-export const databaseID = import.meta.env.VITE_APPWRITE_DATABASE;
-export const collectionID = import.meta.env.VITE_APPWRITE_COLLECTION;
-const bucketID = import.meta.env.VITE_APPWRITE_BUCKET;
-const resizing = import.meta.env.VITE_APPWRITE_RESIZING_COLLECTION;
-const restoration = import.meta.env.VITE_APPWRITE_RESTORATION_COLLECTION;
-const adjustments = import.meta.env.VITE_APPWRITE_ADJUSTMENT_COLLECTION;
-const operationsID = import.meta.env.VITE_APPWRITE_OPERATIONS_COLLECTION;
+
+
+export const databaseID = config.database;
+export const collectionID = config.collection;
+const bucketID = config.bucket_id;
+const resizing = config.resizing_collection;
+const restoration = config.restoration_collection;
+const adjustments = config.adjustments_collection;
+const operationsID = config.operations_collection;
 
 export const client = new Client()
-  .setEndpoint(import.meta.env.VITE_APPWRITE_URL)
-  .setProject(import.meta.env.VITE_APPWRITE_PROJECT);
+  .setEndpoint(config.url)
+  .setProject(config.project_id);
 
 export const storage = new Storage(client);
 
