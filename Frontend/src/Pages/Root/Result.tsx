@@ -67,7 +67,7 @@ const Result = () => {
   }
 
   return (
-    <div className="bg-gray-900 min-h-screen flex flex-col items-center justify-center p-4">
+    <div className="bg-gray-900 min-h-screen w-screen flex flex-col items-center justify-center p-4">
       <div className="max-w-4xl w-full bg-gray-800 p-6 rounded-lg shadow-lg">
         <div className="flex flex-col lg:flex-row items-center lg:space-x-8">
           {outputImageUrl && (
