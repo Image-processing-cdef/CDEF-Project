@@ -17,24 +17,27 @@ function App() {
     const checkUser = async () => {
       try {
         const user = await getUserData();
-        if (user) {
-          setUser(user);
-        }
+        return user
       } catch (err) {
         console.error("Failed to fetch user data:", err);
-      } finally {
-        setLoading(false); // Ensure loading is stopped regardless of success or error
       }
     };
-    checkUser();
+    checkUser().then((user) => {
+      if (user) {
+        setUser(user);
+      }
+      setLoading(false);
+    }).catch(() => {console.error("Failed to fetch user data")});
   }, []);
   
 
-  if (loading) return(
-    <div className="bg-gray-800 w-screen h-screen">
-      <Loading />
-    </div>
-  ); // Display loading indicator until checkUser is complete
+  if (loading) {
+    return (
+      <div className="bg-gray-900 h-screen w-screen flex items-center justify-center">
+        <Loading />
+      </div>
+    );
+  }
 
   return (
     <Routes>
