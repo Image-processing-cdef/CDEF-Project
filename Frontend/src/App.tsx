@@ -14,12 +14,20 @@ function App() {
 
   useEffect(() => {
     const checkUser = async () => {
-      const user = await getUserData();
-      if (user) setUser(user);
-      setLoading(false); // Set loading to false once data is fetched
+      try {
+        const user = await getUserData();
+        if (user) {
+          setUser(user);
+        }
+      } catch (err) {
+        console.error("Failed to fetch user data:", err);
+      } finally {
+        setLoading(false); // Ensure loading is stopped regardless of success or error
+      }
     };
     checkUser();
   }, []);
+  
 
   if (loading) return <div>Loading...</div>; // Display loading indicator until checkUser is complete
 

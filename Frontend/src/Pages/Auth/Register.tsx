@@ -41,11 +41,17 @@ export default function Register({ toggleForm }: RegisterProps) {
 
     try {
       const account = await register(email, password);
-      alert(`Successfully created account with ID: ${account?.$id}`);
-      
-      // Automatically log in the user after successful registration
-      await login(email, password);
-      navigate("/"); // Navigate to Home after login
+      if (account) {
+        alert(`Successfully created account with ID: ${account?.$id}`);
+    
+        // Automatically log in the user after successful registration
+        const loggedInAccount = await login(email, password);
+        if (loggedInAccount) {
+          navigate("/"); // Navigate to Home after login
+        } else {
+          setError("Account created, but login failed. Please log in manually.");
+        }
+      }
     } catch (err) {
       setError("Failed to create account. Please try again.");
     }

@@ -31,11 +31,11 @@ export default function Login({ toggleForm }: LoginProps) {
       setError("Password must be at least 8 characters long and include a number and a special character.");
       return;
     }
-
+  
     try {
       const account = await login(email, password);
       if (account) {
-        alert(`Successfully logged in as: ${account.clientName}`);
+        alert(`Successfully logged in on: ${account.clientName}`);
         navigate("/"); // Navigate to home after successful login
       } else {
         setError("Failed to log in. Please check your credentials.");
@@ -45,6 +45,7 @@ export default function Login({ toggleForm }: LoginProps) {
       setError("Failed to log in. Please check your credentials.");
     }
   };
+  
 
   return (
     <>

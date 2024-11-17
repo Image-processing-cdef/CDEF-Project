@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Operations,
   defaultOperations,
@@ -6,7 +6,14 @@ import {
   upscale_type,
 } from "../../types/image_operations";
 import { saveImage } from "../../utils/appwrite";
-import { AdjustmentsTab , BackgroundRemovalTab , ImageCompressionTab, ObjectDetectionTab , ResizingTab , RestorationTab } from "../../Components/Tabs";
+import {
+  AdjustmentsTab,
+  BackgroundRemovalTab,
+  ImageCompressionTab,
+  ObjectDetectionTab,
+  ResizingTab,
+  RestorationTab,
+} from "../../Components/Tabs";
 import { useNavigate } from "react-router-dom";
 
 const Home: React.FC = () => {
@@ -17,6 +24,51 @@ const Home: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const navigate = useNavigate();
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const drawPattern = (x: number, y: number, size: number = 15) => {
+      ctx.beginPath();
+      for (let i = 0; i < 6; i++) {
+        const angle = (Math.PI / 3) * i;
+        const xOffset = x + size * Math.cos(angle);
+        const yOffset = y + size * Math.sin(angle);
+        ctx.lineTo(xOffset, yOffset);
+      }
+      ctx.closePath();
+      ctx.stroke();
+    };
+
+    const drawBackground = () => {
+      ctx.fillStyle = "#0b141a"; // Dark green background
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.strokeStyle = "#415d53"; // Subtle green for doodles
+      for (let i = 20; i < canvas.width; i += 60) {
+        for (let j = 20; j < canvas.height; j += 60) {
+          drawPattern(i, j, Math.random() * 10 + 5);
+        }
+      }
+    };
+
+    const resizeCanvas = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      drawBackground();
+    };
+
+    resizeCanvas();
+    window.addEventListener("resize", resizeCanvas);
+
+    return () => {
+      window.removeEventListener("resize", resizeCanvas);
+    };
+  }, []);
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -38,7 +90,8 @@ const Home: React.FC = () => {
     setOperations((prev: Operations) => ({
       ...prev,
       restoration: { ...prev.restoration, upscale, polish },
-      image_compression: upscale !== 'none' || !polish ? 'none' : prev.image_compression
+      image_compression:
+        upscale !== "none" || !polish ? "none" : prev.image_compression,
     }));
   };
 
@@ -83,7 +136,11 @@ const Home: React.FC = () => {
     setOperations((prev: Operations) => ({
       ...prev,
       image_compression: value,
-      restoration: { ...prev.restoration, upscale: value !== 'none' ? 'none' : prev.restoration.upscale, polish: value !== 'none' ? false : prev.restoration.polish },
+      restoration: {
+        ...prev.restoration,
+        upscale: value !== "none" ? "none" : prev.restoration.upscale,
+        polish: value !== "none" ? false : prev.restoration.polish,
+      },
     }));
   };
 
@@ -93,31 +150,28 @@ const Home: React.FC = () => {
         ? Object.values(operation).some(Boolean)
         : Boolean(operation)
     );
-  
+
     if (!hasSelectedOperation) {
       setSubmitError("Please select at least one operation before submitting.");
       return;
     }
-  
+
     setSubmitError(null);
-  
+
     try {
-      // Attempt to save the image and process it
       const id = await saveImage(operations, image!);
-  
+
       if (id) {
-        // Redirect to /result/{id} after successful image processing
         navigate(`/result/${id}`);
       } else {
         setSubmitError("An error occurred while processing the image.");
       }
     } catch (error) {
-      // Catch any errors thrown during the saveImage process
       setSubmitError("An unexpected error occurred. Please try again.");
       console.error("Error during image processing:", error);
     }
   };
-  
+
   const renderActiveTab = () => {
     switch (activeTab) {
       case "restoration":
@@ -167,92 +221,61 @@ const Home: React.FC = () => {
     }
   };
 
-
   return (
-    <div className="bg-gray-900 text-white min-h-screen w-screen flex flex-col items-center justify-center py-10">
-      <h1 className="text-4xl font-bold mb-6">Image Processing Operations</h1>
-
-      <h2 className="text-2xl font-semibold mb-4">Upload Image</h2>
-      <input
-        type="file"
-        accept="image/jpeg, image/png"
-        onChange={handleImageUpload}
-        className="bg-gray-800 border border-gray-700 rounded p-2 mb-4 w-1/2"
+    <div className="relative min-h-screen w-screen">
+      <canvas
+        ref={canvasRef}
+        className="absolute top-0 left-0 w-full h-full"
+        style={{ zIndex: -1 }}
       />
-      {error && <div className="text-red-400 mb-4">{error}</div>}
-      {imagePreview && (
-        <div className="mb-4">
-          <h3 className="text-lg font-semibold">Image Preview:</h3>
-          <img src={imagePreview} alt="Preview" className="mt-2 rounded" />
-        </div>
-      )}
+      <div className="bg-transparent text-gray-200 min-h-screen flex flex-col items-center justify-center py-10">
+        <h1 className="text-4xl font-bold mb-6">Image Processing Operations</h1>
 
-      {imagePreview && (
-        <div>
-          <div className="mb-4 flex space-x-2">
-            <button
-              className={`bg-gray-800 hover:bg-gray-700 text-white py-2 px-4 rounded ${
-                activeTab === "restoration" ? "bg-purple-600" : ""
-              }`}
-              onClick={() => setActiveTab("restoration")}
-            >
-              Restoration
-            </button>
-            <button
-              className={`bg-gray-800 hover:bg-gray-700 text-white py-2 px-4 rounded ${
-                activeTab === "resizing" ? "bg-purple-600" : ""
-              }`}
-              onClick={() => setActiveTab("resizing")}
-            >
-              Resizing
-            </button>
-            <button
-              className={`bg-gray-800 hover:bg-gray-700 text-white py-2 px-4 rounded ${
-                activeTab === "adjustments" ? "bg-purple-600" : ""
-              }`}
-              onClick={() => setActiveTab("adjustments")}
-            >
-              Color Adjustments
-            </button>
-            <button
-              className={`bg-gray-800 hover:bg-gray-700 text-white py-2 px-4 rounded ${
-                activeTab === "backgroundRemoval" ? "bg-purple-600" : ""
-              }`}
-              onClick={() => setActiveTab("backgroundRemoval")}
-            >
-              Background Removal
-            </button>
-            <button
-              className={`bg-gray-800 hover:bg-gray-700 text-white py-2 px-4 rounded ${
-                activeTab === "objectDetection" ? "bg-purple-600" : ""
-              }`}
-              onClick={() => setActiveTab("objectDetection")}
-            >
-              Object Detection
-            </button>
-            <button
-              className={`bg-gray-800 hover:bg-gray-700 text-white py-2 px-4 rounded ${
-                activeTab === "imageCompression" ? "bg-purple-600" : ""
-              }`}
-              onClick={() => setActiveTab("imageCompression")}
-            >
-              Image Compression
-            </button>
+        <h2 className="text-2xl font-semibold mb-4">Upload Image</h2>
+        <input
+          type="file"
+          accept="image/jpeg, image/png"
+          onChange={handleImageUpload}
+          className="bg-[#1c2b2f] border border-gray-700 rounded p-2 mb-4 w-1/2 text-gray-300"
+        />
+        {error && <div className="text-red-400 mb-4">{error}</div>}
+        {imagePreview && (
+          <div className="mb-4">
+            <h3 className="text-lg font-semibold">Image Preview:</h3>
+            <img src={imagePreview} alt="Preview" className="mt-2 rounded" />
           </div>
+        )}
 
-          {renderActiveTab()}
+        {imagePreview && (
+          <div>
+            <div className="mb-4 flex space-x-2">
+              {["restoration", "resizing", "adjustments", "backgroundRemoval", "objectDetection", "imageCompression"].map((tab) => (
+                <button
+                  key={tab}
+                  className={`bg-[#1c2b2f] hover:bg-[#273a3d] text-gray-200 py-2 px-4 rounded ${
+                    activeTab === tab ? "bg-green-600" : ""
+                  }`}
+                  onClick={() => setActiveTab(tab)}
+                >
+                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                </button>
+              ))}
+            </div>
 
-          <button
-            className="bg-blue-600 hover:bg-blue-500 text-white py-2 px-4 rounded"
-            onClick={handleSubmit}
-          >
-            Submit
-          </button>
-          {submitError && (
-            <div className="text-red-400 mt-4">{submitError}</div>
-          )}
-        </div>
-      )}
+            {renderActiveTab()}
+
+            <button
+              onClick={handleSubmit}
+              className="mt-4 bg-green-600 hover:bg-green-500 text-gray-200 py-2 px-4 rounded"
+            >
+              Submit
+            </button>
+            {submitError && (
+              <div className="text-red-400 mt-4">{submitError}</div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
