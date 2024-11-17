@@ -117,20 +117,8 @@ export const fetchImageStatus = async (id: string) => {
       documentID
     );
 
-    const output_image_url =
-      response.progress_state === "completed"
-        ? response.output_image_url
-        : null;
-    const object_image_url =
-      response.progress_state === "completed"
-        ? response.object_image_url
-        : null;
-
-    return {
-      status: response.progress_state,
-      output_image_url,
-      object_image_url,
-    };
+    return response;
+    
   } catch (error) {
     const appwriteError = error as AppwriteException;
     console.warn("Error fetching image status:", appwriteError.message);

@@ -2,8 +2,23 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Loading } from "../../Components/Loading";
 import { Models } from "appwrite";
-import { client, collectionID, databaseID } from "../../utils/appwrite";
-import { imageCleanup } from "../../utils/appwrite";
+import {
+  client,
+  collectionID,
+  databaseID,
+  fetchImageStatus,
+  imageCleanup,
+} from "../../utils/appwrite";
+
+const fetchImage = async (id: string): Promise<Models.Document | null> => {
+  try {
+    const response = await fetchImageStatus(id);
+    return response;
+  } catch (error) {
+    console.error("Error fetching image document:", error);
+    return null;
+  }
+};
 
 const Result = () => {
   const { id } = useParams<{ id: string }>(); // Get 'id' from URL params
@@ -13,6 +28,11 @@ const Result = () => {
   const [objectImageUrl, setObjectImageUrl] = useState<string | null>(null);
 
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout | null = null;
+    let intervalId: NodeJS.Timeout | null = null;
+    let isCompleted = false; // Track if progress is already completed
+
+    // Appwrite subscription listener
     const unsubscribe = client.subscribe(
       `databases.${databaseID}.collections.${collectionID}.documents.${id}`,
       (response) => {
@@ -22,6 +42,11 @@ const Result = () => {
           const payload = response.payload as Models.Document;
 
           if (payload.progress_state === "completed") {
+            console.log("Image processing completed via listener.");
+            isCompleted = true; // Mark as completed
+            if (timeoutId) clearTimeout(timeoutId);
+            if (intervalId) clearInterval(intervalId);
+
             setOutputImageUrl(payload.output_image_url);
             setObjectImageUrl(payload.output_object_url);
             setLoading(false);
@@ -30,10 +55,40 @@ const Result = () => {
       }
     );
 
-    return () => {
-      unsubscribe(); // Cleanup the subscription
+    // Fallback fetch logic
+    const fetchDocumentFallback = async () => {
+      if (isCompleted) return; // Avoid redundant calls if already completed
+      try {
+        console.log("Fallback initiated: Fetching the image document.");
+        const document = await fetchImage(id!);
+        if (document && document.progress_state === "completed") {
+          console.log("Image processing completed via fallback.");
+          isCompleted = true; // Mark as completed
+          if (intervalId) clearInterval(intervalId);
+
+          setOutputImageUrl(document.output_image_url);
+          setObjectImageUrl(document.output_object_url);
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error("Fallback fetch failed:", error);
+      }
     };
-  }, [id]); // Add id as dependency to re-run the effect
+
+    // Initial timeout to start fallback
+    timeoutId = setTimeout(() => {
+      if (isCompleted) return; // Avoid setting interval if already completed
+      fetchDocumentFallback(); // Immediate call after 45 seconds
+      intervalId = setInterval(fetchDocumentFallback, 10000); // Call every 10 seconds
+    }, 45000);
+
+    return () => {
+      // Cleanup on unmount
+      if (timeoutId) clearTimeout(timeoutId);
+      if (intervalId) clearInterval(intervalId);
+      unsubscribe();
+    };
+  }, [id]); // Add id as a dependency to re-run the effect
 
   const handleTryAnother = () => {
     imageCleanup(id!); // Cleanup before redirecting

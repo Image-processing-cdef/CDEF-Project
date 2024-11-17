@@ -242,7 +242,7 @@ const Home: React.FC = () => {
         {imagePreview && (
           <div className="mb-4">
             <h3 className="text-lg font-semibold">Image Preview:</h3>
-            <img src={imagePreview} alt="Preview" className="mt-2 rounded" />
+            <img src={imagePreview} alt="Preview" className="mt-2 rounded max-h-[40rem] w-auto object-contain" />
           </div>
         )}
 
