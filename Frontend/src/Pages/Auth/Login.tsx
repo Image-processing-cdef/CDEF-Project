@@ -36,7 +36,8 @@ export default function Login({ toggleForm }: LoginProps) {
       const account = await login(email, password);
       if (account) {
         alert(`Successfully logged in on: ${account.clientName}`);
-        navigate("/"); // Navigate to home after successful login
+        // Trigger the redirection after a small delay
+        setTimeout(() => navigate("/"), 200); // Small delay before redirect
       } else {
         setError("Failed to log in. Please check your credentials.");
       }
@@ -45,7 +46,6 @@ export default function Login({ toggleForm }: LoginProps) {
       setError("Failed to log in. Please check your credentials.");
     }
   };
-  
 
   return (
     <>

@@ -1,5 +1,5 @@
 import { FormEvent, useState } from "react";
-import { register, login } from "../../utils/appwrite"; // Import login function
+import { register, login } from "../../utils/appwrite"; 
 import { useNavigate } from "react-router-dom";
 
 interface RegisterProps {
@@ -47,7 +47,9 @@ export default function Register({ toggleForm }: RegisterProps) {
         // Automatically log in the user after successful registration
         const loggedInAccount = await login(email, password);
         if (loggedInAccount) {
-          navigate("/"); // Navigate to Home after login
+          // Trigger the redirection immediately after login
+
+          setTimeout(() => navigate("/"), 200); // Navigate to home after login
         } else {
           setError("Account created, but login failed. Please log in manually.");
         }

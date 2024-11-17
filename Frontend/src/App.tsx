@@ -5,6 +5,7 @@ import Auth from "./Pages/Auth/Auth";
 import { getUserData } from "./utils/appwrite";
 import { Models } from "appwrite";
 import Result from "./Pages/Root/Result";
+import { Loading } from "./Components/Loading";
 
 function App() {
   const [user, setUser] = useState<Models.User<Models.Preferences> | null>(
@@ -29,7 +30,11 @@ function App() {
   }, []);
   
 
-  if (loading) return <div>Loading...</div>; // Display loading indicator until checkUser is complete
+  if (loading) return(
+    <div className="bg-gray-800 w-screen h-screen">
+      <Loading />
+    </div>
+  ); // Display loading indicator until checkUser is complete
 
   return (
     <Routes>
