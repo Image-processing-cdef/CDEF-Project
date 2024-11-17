@@ -1,5 +1,3 @@
-Here’s the updated **README.md** with a **Team Members** section:
-
 ---
 
 # 🌟 Image Enhancement Website
